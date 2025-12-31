@@ -20,8 +20,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-COLLECT_INTERVAL = 0.5 * 60  # 3 minutes
-SYNC_INTERVAL = 1 * 60  # 1 hour
+COLLECT_INTERVAL = 3 * 60  # 3 minutes
+SYNC_INTERVAL = 0.5 * 60  # 30 minutes
 IMAGE_DIR = os.getenv("OUTPUT_FOLDER")
 
 
