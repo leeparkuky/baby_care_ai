@@ -12,16 +12,49 @@ logger = logging.getLogger(__name__)
 
 def authenticate_drive() -> GoogleDrive:
     """
-    Authenticate with Google Drive using local web server authentication.
-
-    Returns:
-        GoogleDrive: An authenticated Google Drive instance.
+    Authenticate with Google Drive.
+    Uses a persistent token file to allow for silent refreshing of access tokens,
+    enabling non-interactive automation for long periods.
     """
     drive_credentials_path = os.getenv("GOOGLE_DRIVE_CREDENTIALS_PATH")
+    # This is where we store the user's specific tokens/session
+    token_file = os.path.join(
+        os.path.dirname(drive_credentials_path), "google_drive_token.json"
+    )
+
     GoogleAuth.DEFAULT_SETTINGS["client_config_file"] = drive_credentials_path
 
-    gauth = GoogleAuth()
-    gauth.LocalWebserverAuth()
+    settings = LoadSettingsFile(drive_credentials_path)
+    settings["oauth_scope"] = ["https://www.googleapis.com/auth/drive"]
+    settings["client_config_file"] = drive_credentials_path
+    settings["save_credentials"] = True
+    settings["save_credentials_file"] = token_file
+    settings["save_credentials_backend"] = "file"  # Required for PyDrive2 validation
+    settings["get_refresh_token"] = True  # Ensure refresh token is requested
+
+    gauth = GoogleAuth(settings=settings)
+
+    # Try to load existing credentials (tokens) from the token file
+    if os.path.exists(token_file):
+        gauth.LoadCredentialsFile(token_file)
+
+    if gauth.credentials is None:
+        # No valid credentials found, requires manual browser login
+        gauth.LocalWebserverAuth()
+    elif gauth.access_token_expired:
+        # Access token expired, try to refresh silently using the refresh token
+        try:
+            gauth.Refresh()
+        except Exception:
+            # If refresh fails (e.g., token revoked), fall back to manual login
+            gauth.LocalWebserverAuth()
+    else:
+        # Tokens are still valid
+        gauth.Authorize()
+
+    # Save the updated credentials (including the new access token) to the file
+    gauth.SaveCredentialsFile(token_file)
+
     drive = GoogleDrive(gauth)
     return drive
 
