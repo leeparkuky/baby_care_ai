@@ -1,4 +1,5 @@
 import time
+import datetime
 import logging
 import os
 from baby_care_ai.blink.collect import collect_images
@@ -55,6 +56,26 @@ def main():
                 # Sync to Google Drive
                 logger.info("Syncing to Google Drive...")
                 driver = sync_to_google_drive(drive=driver, logger=logger)
+
+                # Clean up old images
+                logger.info("Cleaning up images older than today...")
+                today = datetime.date.today()
+                for root, dirs, files in os.walk(IMAGE_DIR):
+                    for file in files:
+                        if file.endswith(".jpg"):
+                            date_str = file[:8]
+                            try:
+                                file_date = datetime.datetime.strptime(
+                                    date_str, "%Y%m%d"
+                                ).date()
+                                if file_date < today:
+                                    file_path = os.path.join(root, file)
+                                    os.remove(file_path)
+                                    logger.info(f"Removed old image: {file_path}")
+                            except ValueError:
+                                logger.warning(
+                                    f"Could not parse date from filename: {file}"
+                                )
 
                 last_sync_time = current_time
                 logger.info("Hourly maintenance complete.")
