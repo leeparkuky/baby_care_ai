@@ -10,7 +10,7 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 
-def authenticate_drive() -> GoogleDrive:
+def authenticate_drive(logger=logger) -> GoogleDrive:
     """
     Authenticate with Google Drive.
     Uses a persistent token file to allow for silent refreshing of access tokens,
@@ -31,29 +31,38 @@ def authenticate_drive() -> GoogleDrive:
     settings["save_credentials_file"] = token_file
     settings["save_credentials_backend"] = "file"  # Required for PyDrive2 validation
     settings["get_refresh_token"] = True  # Ensure refresh token is requested
-
+    logger.info("Authenticating Google Drive...")
     gauth = GoogleAuth(settings=settings)
 
     # Try to load existing credentials (tokens) from the token file
     if os.path.exists(token_file):
+        logger.info("Loading credentials from token file...")
         gauth.LoadCredentialsFile(token_file)
 
     if gauth.credentials is None:
-        # No valid credentials found, requires manual browser login
+        # No valid credentials found, requires manual browser login\
+        logger.info("No valid credentials found, performing manual authentication...")
         gauth.LocalWebserverAuth()
     elif gauth.access_token_expired:
         # Access token expired, try to refresh silently using the refresh token
         try:
+            logger.info("Refreshing access token silently...")
             gauth.Refresh()
         except Exception:
             # If refresh fails (e.g., token revoked), fall back to manual login
+            logger.info(
+                "Access token refresh failed, performing manual authentication..."
+            )
             gauth.LocalWebserverAuth()
     else:
         # Tokens are still valid
+        logger.info("Credentials are valid, authorizing...")
         gauth.Authorize()
 
     # Save the updated credentials (including the new access token) to the file
+    logger.info("Saving updated credentials to token file...")
     gauth.SaveCredentialsFile(token_file)
+    logger.info("Authentication successful!")
 
     drive = GoogleDrive(gauth)
     return drive

@@ -32,6 +32,8 @@ def main():
     logger.info("Starting Baby Care AI Automation...")
     logger.info(f"Collection interval: {COLLECT_INTERVAL}s")
     logger.info(f"Sync interval: {SYNC_INTERVAL}s")
+    logger.info(f"Output folder: {IMAGE_DIR}")
+    logger.info("Initializing Google Drive authentication...")
     driver = authenticate_drive()
     while True:
         current_time = time.time()
