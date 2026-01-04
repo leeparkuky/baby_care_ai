@@ -68,7 +68,9 @@ def authenticate_drive(logger=logger) -> GoogleDrive:
     return drive
 
 
-def find_folder_id(folder_name: str, drive: GoogleDrive = None) -> str:
+def find_folder_id(
+    folder_name: str, drive: GoogleDrive = None, logger: logging.Logger = None
+) -> str:
     """
     Find a Google Drive folder by name.
 
@@ -79,8 +81,11 @@ def find_folder_id(folder_name: str, drive: GoogleDrive = None) -> str:
     Returns:
         str: The folder ID if found, otherwise an empty string.
     """
+    if logger is None:
+        logger = logging.getLogger(__name__)
+    logger.info(f"Searching for folder '{folder_name}' in Google Drive...")
     if drive is None:
-        drive = authenticate_drive()
+        drive = authenticate_drive(logger=logger)
 
     # Query Google Drive for a folder with the specified name
     file_list = drive.ListFile(
@@ -91,10 +96,10 @@ def find_folder_id(folder_name: str, drive: GoogleDrive = None) -> str:
 
     if file_list:
         folder_id = file_list[0]["id"]
-        print(f"Found folder '{folder_name}' with ID: {folder_id}")
+        logger.info(f"Found folder '{folder_name}' with ID: {folder_id}")
         return folder_id
     else:
-        print(f"Folder '{folder_name}' not found.")
+        logger.info(f"Folder '{folder_name}' not found.")
         return ""
 
 
@@ -128,7 +133,7 @@ def upload_files(
     assert len(subfolder_names) > 0, f"No subfolders found in {local_folder}"
 
     if drive is None:
-        drive = authenticate_drive()
+        drive = authenticate_drive(logger=logger)
 
     # Iterate through each subfolder
     for room_name in subfolder_names:
@@ -184,9 +189,10 @@ def sync_to_google_drive(
     Args:
         drive: An authenticated Google Drive instance.
     """
-
+    if logger is None:
+        logger = logging.getLogger(__name__)
     if drive is None:
-        drive = authenticate_drive()
+        drive = authenticate_drive(logger=logger)
     local_folder = os.getenv("OUTPUT_FOLDER")
     # list the name of all subfolders in the local_folder
     subfolder_names = [
@@ -199,7 +205,7 @@ def sync_to_google_drive(
     assert google_drive_folder_name is not None, (
         "GOOGLE_DRIVE_PHOTO_FOLDER_NAME is not set"
     )
-    parent_folder_id = find_folder_id(google_drive_folder_name, drive)
+    parent_folder_id = find_folder_id(google_drive_folder_name, drive, logger=logger)
     if parent_folder_id:
         upload_files(
             folder_id=parent_folder_id,
