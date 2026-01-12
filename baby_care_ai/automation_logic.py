@@ -8,6 +8,7 @@ from baby_care_ai.gooogle_drive.drive_utils import (
     sync_to_google_drive,
     authenticate_drive,
 )
+from baby_care_ai.rpi.collect import rpi_images
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -42,9 +43,17 @@ def main():
         logger.info("Step 1: Collecting images from Blink cameras...")
         try:
             collect_images()
-            logger.info("Collection successful.")
+            logger.info("Blink collection successful.")
         except Exception as e:
-            logger.error(f"Error during collection: {e}", exc_info=True)
+            logger.error(f"Error during Blink collection: {e}", exc_info=True)
+
+        # Collect images from Raspberry Pi cameras
+        logger.info("Step 1b: Collecting images from Raspberry Pi cameras...")
+        try:
+            rpi_images(logger=logger)
+            logger.info("Raspberry Pi collection successful.")
+        except Exception as e:
+            logger.error(f"Error during Raspberry Pi collection: {e}", exc_info=True)
 
         # 2. Every 1 hour, dedup and sync
         if current_time - last_sync_time >= SYNC_INTERVAL:
