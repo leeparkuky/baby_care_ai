@@ -1,3 +1,4 @@
 aiohttp
 blinkpy
 python-dotenv
+fabric
